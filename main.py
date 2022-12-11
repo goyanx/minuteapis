@@ -1,10 +1,15 @@
 from fastapi import FastAPI, Request
-import logging
+from pydantic import BaseModel
 import uvicorn
 from allennlp.predictors.predictor import Predictor
 import allennlp_models.rc
 
 app = FastAPI()
+
+
+class APIRequest(BaseModel):
+    passage: str
+    question: str
 
 
 @app.on_event("startup")
@@ -14,14 +19,15 @@ def load_model():
         "https://storage.googleapis.com/allennlp-public-models/bidaf-elmo.2021-02-11.tar.gz")
 
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-
 @app.get("/api")
 async def get_analysis(p: str = 'Peter Sullivan is an associate in the Risk Assessment and Management Office at MBS', q: str = 'what is the problem ?'):
     results = predictor.predict(passage=p, question=q)
+    return {"answer": results}
+
+
+@app.post("/api")
+async def get_analysisPost(data: APIRequest):
+    results = predictor.predict(passage=data.passage, question=data.question)
     return {"answer": results}
 
 if __name__ == "__main__":
